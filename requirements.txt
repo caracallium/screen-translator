@@ -1,0 +1,10 @@
+mss==9.0.2
+rapidocr-onnxruntime==1.4.4
+googletrans==4.0.2
+httpx[http2]>=0.27.2,<0.29
+numpy==2.2.6
+opencv-python==4.11.0.86
+onnxruntime==1.22.1
+Pillow==11.3.0
+ctranslate2==4.8.2
+sentencepiece==0.2.2

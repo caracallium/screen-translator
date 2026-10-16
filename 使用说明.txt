@@ -1,0 +1,84 @@
+屏幕区域实时翻译（Windows，英语 → 简体中文）
+
+一、怎么运行
+
+这台电脑已经准备好 Python 3.12 独立环境和离线模型：双击 run_here.bat。
+复制到其他电脑：安装 64 位 Python 3.12，解压全部文件后双击 start.bat。
+start.bat 会创建 .venv、安装依赖、下载约 71 MB 的语言模型，然后打开程序。
+首次准备需要联网；以后选“本地离线”时，截图、识别、翻译全部在本机完成。
+程序打开后不会自动监看屏幕，点击“开始翻译”才会截图。
+
+1. 点击“① 框选区域”，拖动鼠标框住需要翻译的英文。
+   对于左下方的固定字幕，只框文字部分，避免把整屏视频也选进去。
+   Esc 或右键取消框选。框选范围至少 20 × 20 像素。
+2. 将译文窗口拖到识别区域外，选择“本地离线（推荐）”。
+3. 点击“② 开始翻译”。原文和译文将自动更新；再次点击暂停。
+4. 程序会保存选区坐标到 settings.json。显示器布局未变时，下次自动载入。
+   窗口位置、字幕位置或屏幕缩放改变后，请重新框选。
+   程序跟踪的是固定屏幕像素位置，不会跟随 Zoom 等窗口移动。
+
+可以拖动窗口并调整大小，设置置顶。Ctrl+空格可在本窗口获得焦点时切换暂停；
+它不是系统全局快捷键。关闭窗口即停止工作，不会后台持续录制。
+如果译文窗口移入识别区域，程序会暂停，避免把自己的中文反复识别。
+
+二、速度和限制
+
+默认每 0.3 秒检查区域。画面有变化才识别，同时每 1.5 秒复查一次，减少漏检。
+OCR 模型和翻译模型常驻内存；重复文本命中缓存；工作队列只处理最新内容。
+本地推理正在进行时会等这一条算完，再处理最新文字；过期结果不会覆盖新文字。
+
+本机合成样例测试：800 × 150 像素的两行英文，预热后 OCR 约 60–80 ms；
+离线短句翻译约 50–85 ms。完整流程的首次启动样例约 1.3 秒，缓存样例
+本次处理约 125 ms。这些是测试样例，实际延迟还包括检测间隔、文字数量、
+画面变化、模型加载和电脑负载；“0.3 秒检测”不等于保证 0.3 秒出译文。
+
+小范围的清晰字幕最适合。字幕文字太小时，可在原软件内调大字号。
+竖排、旋转文字、手写字和复杂多栏布局不在本版本的主要支持范围内。
+OCR 默认模型适用于中英文；“自动检测”指联网翻译的源语言检测，并不会
+让 OCR 自动获得日文等所有语言的识别能力。本地离线模型仅支持英译中。
+离线小模型侧重响应速度，术语、人名、口语残句可能误译，可对照上方原文。
+超过 4000 字符会提示缩小区域，不会悄悄截断；字幕通常远少于这个长度。
+
+三、联网翻译（可选）
+
+暂停后可以切换为“Google 联网翻译”。这个模式会把识别出的文字发送给
+Google 翻译，截图本身不会上传。本次网络测试返回 HTTP 429/403，所以默认
+采用离线模式。googletrans 是非官方客户端，可能遇到连接失败或限流；代码
+提供超时和退避重试，但不保证该服务在所有网络都可用。
+
+四、手动安装与运行（在本文件夹打开终端）
+
+py -3.12 -m venv .venv
+.venv\Scripts\python.exe -m pip install -r requirements.txt
+.venv\Scripts\python.exe download_model.py
+.venv\Scripts\python.exe screen_translator.py
+
+已有模型时，可指定其父目录：
+.venv\Scripts\python.exe screen_translator.py --model-dir "D:\my-models"
+
+源文件：screen_translator.py（界面/截图/识别/调度）
+        offline_translate.py（本地英中翻译）
+        download_model.py（首次下载模型）
+        requirements.txt（依赖版本）
+
+Python 标准库没有内置机器翻译或 OCR。界面使用标准库 Tkinter；截图使用
+MSS；识别使用 RapidOCR/ONNX Runtime；离线翻译使用 CTranslate2、SentencePiece
+和 Argos 英中 1.9 模型。无需 GPU、API 密钥或额外安装 Tesseract。
+程序不会保存截图、识别出的原文或翻译历史，只保存框选坐标。
+
+五、验证情况与参考资料
+
+已通过依赖一致性检查、15 项状态/缓存/取消/重试行为测试，以及使用合成
+英文图片的真实 OCR + 离线翻译集成测试。界面已完成隐藏窗口初始化检查。
+Computer Use 读取当前 Zoom 画面两次超时，所以未核验你的左下区域坐标，
+也没有宣称完成真实桌面的框选或多屏拖动测试。首次请自行框选。
+
+RapidOCR API：https://rapidai.github.io/RapidOCRDocs/v1.4.4/install_usage/api/RapidOCR/
+MSS：https://pypi.org/project/mss/9.0.2/
+Argos 模型索引：https://github.com/argosopentech/argospm-index
+CTranslate2：https://opennmt.net/CTranslate2/python/ctranslate2.Translator.html
+googletrans：https://pypi.org/project/googletrans/4.0.2/
+
+模型来自 Argos 官方索引，固定 en_zh 1.9。上游包的 README 和许可文件会保留；
+原 OPUS-MT 模型的作者署名为 Jörg Tiedemann 和 Santhosh Thottingal，许可为
+CC-BY 4.0。安装后见模型目录下 README.md 及 MODEL_SOURCE.json。
